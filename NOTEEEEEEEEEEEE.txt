@@ -1,0 +1,5 @@
+Pengecekan pada can_access di js yang udh cuma kategori
+
+
+draft, proses_input, menunggu_validasi, tidak_layak (Status Produk oleh Opname)
+tersedia, tidak tersedia (Status Produk oleh Admin)
