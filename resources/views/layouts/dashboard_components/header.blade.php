@@ -12,20 +12,12 @@
         </div>
 
         {{-- Toolbar Wrapper --}}
-        <div class="app-navbar flex-lg-grow-1" id="kt_app_header_navbar">
+        <div class="app-navbar flex-lg-grow-1 justify-content-end" id="kt_app_header_navbar">
             {{-- Notification --}}
             <div class="app-navbar-item ms-1 ms-md-3">
                 {{-- Wrapper --}}
                 <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-light btn-active-color-primary w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
-                    <i class="ki-outline ki-calendar fs-1"></i>
-                </div>
-            </div>
-
-            {{-- Quick Links --}}
-            <div class="app-navbar-item ms-1 ms-md-3">
-                {{-- Wrapper --}}
-                <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-light btn-active-color-primary w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
-                    <i class="ki-outline ki-abstract-26 fs-1"></i>
+                    <a href="{{ route('dashboard.index') }}"><i class="ki-outline ki-abstract-26 fs-1"></i></a>
                 </div>
             </div>
 

@@ -49,9 +49,4 @@ class Product extends BaseModel
     {
         return $this->hasMany(ProductVariant::class);
     }
-
-    public function getBasePriceAttribute($value)
-    {
-        return number_format($value, 0, ',', '.');
-    }
 }

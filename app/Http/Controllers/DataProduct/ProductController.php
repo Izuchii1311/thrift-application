@@ -5,6 +5,8 @@ namespace App\Http\Controllers\DataProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\DataProduct\Product;
+use App\Models\DataProduct\Category;
+use App\Models\DataProduct\Brand;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +18,7 @@ use App\Models\DataProduct\ProductVariant;
 
 class ProductController extends BaseController
 {
+    // Management Product
     public function index()
     {
         $menu_access = $this->getMenuPermissionsByKey('product');
@@ -35,13 +38,13 @@ class ProductController extends BaseController
                 'products.base_price',
                 'products.total_stock',
                 'products.status',
-            
+
                 'brands.brand_name',
                 'categories.category_name'
             )
             ->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
             ->join('categories', 'products.category_id', '=', 'categories.id');
-            
+
             if (!empty($request->search)) {
                 $data->where(function ($query) use ($request) {
                     $query->where('products.product_name',      'ilike', '%' . $request->search . '%')
@@ -56,18 +59,18 @@ class ProductController extends BaseController
                 $product_image_thumbnail = ProductImage::where('product_id', $row->id)
                     ->where('is_primary', true)
                     ->first();
-            
+
                 $thumbnail_url = $product_image_thumbnail
                     ? asset('storage/' . $product_image_thumbnail->image_url)
                     : asset('assets/dashboard/media/no_image.jpg');
-            
+
                     return '<div class="d-flex align-items-center">
                         <div class="symbol symbol-50px me-5">
-                            <span class="symbol-label" style="background-image:url(\'' . $thumbnail_url . '\'); background-size: cover; background-position: center;" data-bs-toggle="modal" 
+                            <span class="symbol-label" style="background-image:url(\'' . $thumbnail_url . '\'); background-size: cover; background-position: center;" data-bs-toggle="modal"
                             data-bs-target="#product_detail" onclick="loadDetailData(\'' . $row->slug . '\')"></span>
                         </div>
                         <div>
-                            <a class="text-gray-800 text-hover-primary fs-5 fw-bold" data-bs-toggle="modal" 
+                            <a class="text-gray-800 text-hover-primary fs-5 fw-bold" data-bs-toggle="modal"
                             data-bs-target="#product_detail" onclick="loadDetailData(\'' . $row->slug . '\')">' . $row->product_name . '</a>
                         </div>
                     </div>';
@@ -77,7 +80,7 @@ class ProductController extends BaseController
             })
             ->addColumn('total_stock', function ($row) {
                 $badgeClass = 'badge-secondary';
-            
+
                 if ($row->total_stock == 0) {
                     $badgeClass = 'badge-danger';
                 } elseif ($row->total_stock < 50) {
@@ -85,12 +88,12 @@ class ProductController extends BaseController
                 } elseif ($row->total_stock >= 50) {
                     $badgeClass = 'badge-primary';
                 }
-            
+
                 return '<span class="badge ' . $badgeClass . '">' . $row->total_stock . '</span>';
             })
             ->addColumn('status', function ($row) {
                 $formattedStatus = ucwords(str_replace('_', ' ', $row->status));
-                
+
                 $badgeClass = match ($row->status) {
                     'tersedia'          => 'badge-success',
                     'tidak_tersedia'    => 'badge-danger',
@@ -100,7 +103,7 @@ class ProductController extends BaseController
                     'draft'             => 'badge-primary',
                     default             => 'badge-secondary',
                 };
-            
+
                 return '<span class="badge ' . $badgeClass . '">' . $formattedStatus . '</span>';
             })
             ->addColumn('action', function ($row) {
@@ -122,7 +125,7 @@ class ProductController extends BaseController
     {
         $menu_access = $this->getMenuPermissionsByKey('product');
         return view('dashboard.data-product.product.create', compact('menu_access'));
-    }    
+    }
 
     public function store(Request $request)
     {
@@ -155,19 +158,19 @@ class ProductController extends BaseController
                 'stock_quantity_color'  => 'array|nullable',
                 'stock_quantity_color.*'=> 'nullable|integer|min:0',
             ];
-    
+
             $validator = Validator::make($request->all(), $rules);
-    
+
             if ($validator->fails()) {
                 return $this->api_response_validator('Periksa kembali data yang Anda isi!', [], $validator->errors()->toArray(), 422);
             }
-    
+
             $validated              = $validator->validate();
             $totalStock             = $validated['total_stock'];
             $typeVariant            = $validated['type_variant'] ?? [];
             $stockQuantitiesSize    = $validated['stock_quantity_size'] ?? [];
             $stockQuantitiesColor   = $validated['stock_quantity_color'] ?? [];
-    
+
             if (!empty($typeVariant)) {
                 $isColorVariant = in_array('warna', $typeVariant);
                 $isSizeVariant = in_array('ukuran', $typeVariant);
@@ -175,28 +178,28 @@ class ProductController extends BaseController
                 if ($isColorVariant && array_sum($stockQuantitiesColor) > $totalStock) {
                     return $this->api_response_validator( 'Jumlah total stok warna tidak boleh melebihi total stok produk!', [], ['stock_quantity_color' => ['Jumlah total stok warna tidak boleh melebihi total stok produk']], 422 );
                 }
-    
+
                 if ($isSizeVariant && array_sum($stockQuantitiesSize) > $totalStock) {
                     return $this->api_response_validator( 'Jumlah total stok ukuran tidak boleh melebihi total stok produk!', [], ['stock_quantity_size' => ['Jumlah total stok ukuran tidak boleh melebihi total stok produk']], 422 );
                 }
             }
-    
+
             DB::beginTransaction();
             $product = Product::create($validated);
-    
+
             $uploadedImages = [];
             // Store product images to database
             foreach ($request->file('product_images', []) as $index => $image) {
                 $path = $this->storeFile($image, 'product_images');
                 $uploadedImages[] = $path;
-    
+
                 ProductImage::create([
                     'product_id' => $product->id,
                     'image_url'  => $path,
                     'is_primary' => $index === 0,
                 ]);
             }
-    
+
             // Store product variants to database
             foreach ($typeVariant as $key => $type) {
                 $size   = $type === 'ukuran'    ? $validated['size_variant'][$key]  ?? null : null;
@@ -219,7 +222,7 @@ class ProductController extends BaseController
                 ]);
             }
 
-    
+
             DB::commit();
             return $this->api_response_success('Berhasil menambahkan data Produk baru.', $validated);
         } catch (\Throwable $th) {
@@ -254,7 +257,7 @@ class ProductController extends BaseController
         $menu_access = $this->getMenuPermissionsByKey('product');
         return view('dashboard.data-product.product.edit', compact('menu_access', 'slug'));
     }
-    
+
     public function update(Request $request, $slug)
     {
         try {
@@ -286,19 +289,19 @@ class ProductController extends BaseController
                 'stock_quantity_color'  => 'array|nullable',
                 'stock_quantity_color.*'=> 'nullable|integer|min:0',
             ];
-    
+
             $validator = Validator::make($request->all(), $rules);
-    
+
             if ($validator->fails()) {
                 return $this->api_response_validator('Periksa kembali data yang Anda isi!', [], $validator->errors()->toArray(), 422);
             }
-    
+
             $validated              = $validator->validate();
             $totalStock             = $validated['total_stock'];
             $typeVariant            = $validated['type_variant'] ?? [];
             $stockQuantitiesSize    = $validated['stock_quantity_size'] ?? [];
             $stockQuantitiesColor   = $validated['stock_quantity_color'] ?? [];
-    
+
             Log::info('Cek variant', [
                 'totalStock' => $totalStock,
                 'typeVariant' => $typeVariant,
@@ -313,36 +316,36 @@ class ProductController extends BaseController
                 if ($isColorVariant && array_sum($stockQuantitiesColor) > $totalStock) {
                     return $this->api_response_validator( 'Jumlah total stok warna tidak boleh melebihi total stok produk!', [], ['stock_quantity_color' => ['Jumlah total stok warna tidak boleh melebihi total stok produk']], 422 );
                 }
-    
+
                 if ($isSizeVariant && array_sum($stockQuantitiesSize) > $totalStock) {
                     return $this->api_response_validator( 'Jumlah total stok ukuran tidak boleh melebihi total stok produk!', [], ['stock_quantity_size' => ['Jumlah total stok ukuran tidak boleh melebihi total stok produk']], 422 );
                 }
             }
-    
+
             $uploadedImages = [];
             $oldImagesToDelete = [];
 
             DB::beginTransaction();
             $product = Product::where('slug', $slug)->firstOrFail();
             $product->update($validated);
-    
+
             // Handle File
             if ($request->hasFile('product_images')) {
                 foreach ($request->file('product_images') as $index => $image) {
                     $path = $this->storeFile($image, 'product_images');
                     $uploadedImages[] = $path;
-    
+
                     ProductImage::create([
                         'product_id' => $product->id,
                         'image_url'  => $path,
                         'is_primary' => $index === 0,
                     ]);
                 }
-    
+
                 $oldImagesToDelete = ProductImage::where('product_id', $product->id)->pluck('image_url')->toArray();
                 ProductImage::where('product_id', $product->id)->delete();
             }
-    
+
             // Update Product Variant
             foreach ($typeVariant as $key => $type) {
                 $size   = $type === 'ukuran'    ? $validated['size_variant'][$key]  ?? null : null;
@@ -380,16 +383,16 @@ class ProductController extends BaseController
                     ]);
                 }
             }
-    
+
             DB::commit();
-    
+
             foreach ($oldImagesToDelete as $oldImage) {
                 if (isset($oldImage) && Storage::disk('public')->exists($oldImage)) {
                     Storage::disk('public')->delete($oldImage);
                     $this->deleteEmptyDirectory(dirname($oldImage));
                 }
             }
-    
+
             return $this->api_response_success('Berhasil memperbarui data Produk.', $product->fresh()->toArray());
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -420,6 +423,228 @@ class ProductController extends BaseController
             DB::commit();
 
             return $this->api_response_success('Berhasil menghapus data Produk.', []);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return $this->api_response_error($th->getMessage() . ' - ' . $th->getLine(), [], $th->getTrace());
+        }
+    }
+
+    public function updatePrice(Request $request, $slug)
+    {
+        try {
+            $product = Product::where('slug', $slug)->first();
+
+            if (!$product) {
+                return $this->api_response_error('Data tidak ditemukan.');
+            }
+
+            $rules = [
+                'margin_price' => 'required|numeric',
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                return $this->api_response_validator('Periksa kembali data yang Anda isi!', [], $validator->errors()->toArray(), 422);
+            }
+
+            $validated = $validator->validate();
+
+            DB::beginTransaction();
+            $basePrice      = (float)$product->base_price;
+            $marginPrice    = (float)$validated['margin_price'];
+    
+            $product->margin_price  = $marginPrice;
+            $product->final_price   = $basePrice + $marginPrice;
+            $product->status        = 'tersedia';
+            $product->save();
+            DB::commit();
+
+            return $this->api_response_success('Berhasil, Produk sekarang dialihkan ke dalam Katalog Produk yang siap dijual', []);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return $this->api_response_error($th->getMessage() . ' - ' . $th->getLine(), [], $th->getTrace());
+        }
+    }
+    
+    // List of Product
+    public function listProduct(Request $request)
+    {
+        $query = Product::with(['images', 'category', 'brand'])
+        ->whereIn('status', [
+            'menunggu_validasi'
+        ]);
+    
+        if ($request->category_id) {
+            $query->where('category_id', $request->category_id);
+        }
+    
+        if ($request->brand_id) {
+            $query->where('brand_id', $request->brand_id);
+        }
+    
+        if ($request->search) {
+            $query->where('product_name', 'ilike', '%' . $request->search . '%');
+        }
+    
+        $products = $query->paginate(5);
+    
+        return view('dashboard.data-product.list-product.index', compact('products'));
+    }
+    
+    // Catalog Product
+    public function indexKatalog()
+    {
+        $menu_access = $this->getMenuPermissionsByKey('katalog-product');
+        return view('dashboard.data-product.katalog-product.index', compact('menu_access'));
+    }
+
+    public function indexKatalogJson(Request $request)
+    {
+        try {
+            $data = Product::select(
+                'products.id',
+                'products.category_id',
+                'products.brand_id',
+                'products.product_name',
+                'products.slug',
+                'products.description',
+                'products.base_price',
+                'products.margin_price',
+                'products.final_price',
+                'products.total_stock',
+                'products.status',
+
+                'brands.brand_name',
+                'categories.category_name'
+            )
+            ->whereIn('status', ['tersedia', 'tidak_tersedia'])
+            ->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
+            ->join('categories', 'products.category_id', '=', 'categories.id');
+
+            if (!empty($request->search)) {
+                $data->where(function ($query) use ($request) {
+                    $query->where('products.product_name',      'ilike', '%' . $request->search . '%')
+                          ->orWhere('categories.category_name', 'ilike', '%' . $request->search . '%')
+                          ->orWhere('brands.brand_name',        'ilike', '%' . $request->search . '%');
+                });
+            }
+
+            return Datatables::of($data)
+            ->addIndexColumn()
+            ->addColumn('product_info', function ($row) {
+                $product_image_thumbnail = ProductImage::where('product_id', $row->id)
+                    ->where('is_primary', true)
+                    ->first();
+
+                $thumbnail_url = $product_image_thumbnail
+                    ? asset('storage/' . $product_image_thumbnail->image_url)
+                    : asset('assets/dashboard/media/no_image.jpg');
+
+                    return '<div class="d-flex align-items-center">
+                        <div class="symbol symbol-50px me-5">
+                            <span class="symbol-label" style="background-image:url(\'' . $thumbnail_url . '\'); background-size: cover; background-position: center;" data-bs-toggle="modal"
+                            data-bs-target="#product_detail" onclick="loadDetailData(\'' . $row->slug . '\')"></span>
+                        </div>
+                        <div>
+                            <a class="text-gray-800 text-hover-primary fs-5 fw-bold" data-bs-toggle="modal"
+                            data-bs-target="#product_detail" onclick="loadDetailData(\'' . $row->slug . '\')">' . $row->product_name . '</a>
+                        </div>
+                    </div>';
+            })
+            ->addColumn('base_price', function ($row) {
+                return 'Rp. ' . $row->base_price;
+            })
+            ->addColumn('margin_price', function ($row) {
+                return 'Rp. ' . $row->margin_price;
+            })
+            ->addColumn('final_price', function ($row) {
+                return 'Rp. ' . $row->final_price;
+            })
+            ->addColumn('total_stock', function ($row) {
+                $badgeClass = 'badge-secondary';
+
+                if ($row->total_stock == 0) {
+                    $badgeClass = 'badge-danger';
+                } elseif ($row->total_stock < 50) {
+                    $badgeClass = 'badge-warning';
+                } elseif ($row->total_stock >= 50) {
+                    $badgeClass = 'badge-primary';
+                }
+
+                return '<span class="badge ' . $badgeClass . '">' . $row->total_stock . '</span>';
+            })
+            ->addColumn('status', function ($row) {
+                $formattedStatus = ucwords(str_replace('_', ' ', $row->status));
+
+                $badgeClass = match ($row->status) {
+                    'tersedia'          => 'badge-success',
+                    'tidak_tersedia'    => 'badge-danger',
+                    'proses'            => 'badge-warning',
+                    'menunggu_validasi' => 'badge-info',
+                    'tidak_layak'       => 'badge-secondary',
+                    'draft'             => 'badge-primary',
+                    default             => 'badge-secondary',
+                };
+
+                return '<span class="badge ' . $badgeClass . '">' . $formattedStatus . '</span>';
+            })
+            ->addColumn('action', function ($row) {
+                $menu_access = $this->getMenuPermissionsByKey('katalog-product');
+
+                $can_update = $menu_access['can_update'] ?? false;
+                $can_delete = $menu_access['can_delete'] ?? false;
+
+                return $this->renderActions($row, $can_update, $can_delete, $row->slug);
+            })
+            ->rawColumns(['base_price', 'margin_price', 'final_price', 'total_stock', 'status', 'product_info', 'action'])
+            ->toArray();
+        } catch (\Throwable $th) {
+            return $this->api_response_error($th->getMessage() . ' - ' . $th->getLine(), [], $th->getTrace());
+        }
+    }
+
+    public function updateKatalog(Request $request, $slug)
+    {
+        try {
+            $product = Product::where('slug', $slug)->first();
+
+            if (!$product) {
+                return $this->api_response_error('Data tidak ditemukan.');
+            }
+
+            $role = Auth::user()->roles->firstWhere('pivot.is_active', true)->role_name;
+
+            $statusRules = match ($role) {
+                'Opname' => 'required|in:draft,proses,menunggu_validasi,tidak_layak',
+                'Admin' => 'required|in:tersedia,tidak_tersedia',
+                default => 'required|in:draft,proses,menunggu_validasi,tidak_layak,tersedia,tidak_tersedia',
+            };
+
+            $rules = [
+                'margin_price'  => 'required|numeric',
+                'status'        => $statusRules,
+            ];
+
+            $validator = Validator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                return $this->api_response_validator('Periksa kembali data yang Anda isi!', [], $validator->errors()->toArray(), 422);
+            }
+
+            $validated = $validator->validate();
+
+            DB::beginTransaction();
+            $basePrice      = (float)$product->base_price;
+            $marginPrice    = (float)$validated['margin_price'];
+    
+            $product->margin_price  = $marginPrice;
+            $product->final_price   = $basePrice + $marginPrice;
+            $product->status        = $validated['status'];
+            $product->save();
+            DB::commit();
+
+            return $this->api_response_success('Data Produk berhasil diperbarui.', []);
         } catch (\Throwable $th) {
             DB::rollBack();
             return $this->api_response_error($th->getMessage() . ' - ' . $th->getLine(), [], $th->getTrace());

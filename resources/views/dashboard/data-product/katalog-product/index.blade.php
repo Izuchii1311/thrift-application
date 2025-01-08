@@ -1,7 +1,7 @@
 @extends('layouts.dashboard_layout')
-{{-- @section('title', $menu_path ? $menu_path->menu_name : 'Product') --}}
-@section('title', 'Product')
-@section('product', 'here')
+{{-- @section('title', $menu_path ? $menu_path->menu_name : 'Katalog Product') --}}
+@section('title', 'Katalog Product')
+@section('katalog-product', 'here')
 
 @section('content')
     @include('layouts.dashboard_components.toolbar')
@@ -96,6 +96,7 @@
                                 <th class="min-w-125px">Kategori</th>
                                 <th class="min-w-125px">Brand</th>
                                 <th class="min-w-125px">Total Stock</th>
+                                <th class="min-w-125px">Margin Produk</th>
                                 <th class="min-w-125px">Harga Produk</th>
                                 <th class="min-w-125px">Status Produk</th>
                             </tr>
@@ -136,6 +137,8 @@
 
                             <ul class="list-unstyled">
                                 <li class="mb-2"><i class="fas fa-tag text-success me-2"></i><strong>Harga:</strong> <span id="base_price">-</span></li>
+                                <li class="mb-2"><i class="fas fa-tag text-success me-2"></i><strong>Margin Produk:</strong> <span id="margin_price">-</span></li>
+                                <li class="mb-2"><i class="fas fa-tag text-success me-2"></i><strong>Total Harga Produk:</strong> <span id="final_price">-</span></li>
                                 <li class="mb-2"><i class="fas fa-cubes text-warning me-2"></i><strong>Stock:</strong> <span id="total_stock">-</span></li>
                                 <li class="mb-2" id="category_name_container"><i class="fas fa-layer-group text-primary me-2"></i><strong>Kategori:</strong> <span id="category_name">-</span></li>
                                 <li class="mb-2" id="brand_name_container"><i class="fas fa-industry text-info me-2"></i><strong>Brand:</strong> <span id="brand_name">-</span></li>
@@ -154,6 +157,75 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="form_modal" tabindex="-1" aria-hidden="true">
+        {{-- Modal --}}
+        <div class="modal-dialog modal-dialog-centered mw-650px">
+            <div class="modal-content">
+                {{-- Modal Header --}}
+                <div class="modal-header" id="form_modal_header">
+                    <h2 class="fw-bold" id="form_modal_title">Edit Produk</h2>
+                    <div class="btn btn-icon btn-sm btn-active-icon-primary" onclick="$('#form_modal').modal('hide');">
+                        <i class="ki-outline ki-cross fs-1"></i>
+                    </div>
+                </div>
+
+                {{-- Modal Body --}}
+                <div class="modal-body px-5 my-7">
+                    <form id="form-data" class="form" action="">
+                        @csrf
+
+                        <div class="d-flex flex-column scroll-y px-5 px-lg-10" id="form_modal_scroll" data-kt-scroll="true" data-kt-scroll-activate="true" data-kt-scroll-max-height="auto" data-kt-scroll-dependencies="#form_modal_header" data-kt-scroll-wrappers="#form_modal_scroll" data-kt-scroll-offset="300px" >
+                            {{-- Input data --}}
+                            <div class="fv-row mb-7">
+                                <label class="required fw-semibold fs-6 mb-2">Status Produk</label>
+                                
+                                <select class="form-select mb-2" name="status" id="status_update" data-control="select2" data-hide-search="true" data-placeholder="Status Produk">
+                                    <option></option>
+                                    @if(auth()->user()->roles->firstWhere('pivot.is_active', true)->role_name === 'opname')
+                                        <!-- Opsi untuk Opname -->
+                                        <option value="draft">Draft</option>
+                                        <option value="proses">Dalam Proses</option>
+                                        <option value="menunggu_validasi">Menunggu Validasi</option>
+                                        <option value="tidak_layak">Tidak Layak</option>
+                                    @elseif(auth()->user()->roles->firstWhere('pivot.is_active', true)->role_name === 'admin')
+                                        <!-- Opsi untuk Admin -->
+                                        <option value="tersedia">Tersedia</option>
+                                        <option value="tidak_tersedia">Tidak Tersedia</option>
+                                    @else 
+                                        <option value="draft">Draft</option>
+                                        <option value="proses">Dalam Proses</option>
+                                        <option value="menunggu_validasi">Menunggu Validasi</option>
+                                        <option value="tidak_layak">Tidak Layak</option>
+                                        <option value="tersedia">Tersedia</option>
+                                        <option value="tidak_tersedia">Tidak Tersedia</option>
+                                    @endif
+                                </select>
+                                <div class="text-muted fs-7">Ubah Status Produk.</div>
+                            </div>
+
+                            {{-- Input data --}}
+                            <div class="fv-row mb-7">
+                                <label class="required fw-semibold fs-6 mb-2">Ubah Harga Jual</label>
+                                <input type="text" name="margin_price" id="margin_price_update" class="form-control mb-2" placeholder="Masukkan Harga Jual" required/>
+                            </div>
+
+                        </div>
+
+                        {{-- Action --}}
+                        <div class="text-center pt-10">
+                            <button type="reset" class="btn btn-light me-3">Reset</button>
+                            <button type="button" class="btn btn-primary" onclick="submitForm()">
+                                <span class="indicator-label">Simpan</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
 @endsection
 
 @push('js')
@@ -165,7 +237,7 @@
             table = $('#table').DataTable({
                 processing: true, serverSide: true,
                 ajax: {
-                    url: '{{ route("product.indexJson") }}',
+                    url: '{{ route("katalog-product.indexKatalogJson") }}',
                     type: 'POST',
                     data: function (d) {
                         d._token = "{{ csrf_token() }}";
@@ -182,7 +254,8 @@
                     { data: 'category_name',    orderable: true },
                     { data: 'brand_name',       orderable: true, render: function (data) { return data ?? '-'; } },
                     { data: 'total_stock',      orderable: true },
-                    { data: 'base_price',       orderable: true },
+                    { data: 'margin_price',     orderable: true },
+                    { data: 'final_price',      orderable: true },
                     { data: 'status',           orderable: true },
                 ],
                 language: {
@@ -224,6 +297,8 @@
                     $('#product_name').text(data.product_name || 'Nama Produk Tidak Diketahui');
                     $('#product_description').text(data.description || 'Deskripsi tidak tersedia');
                     $('#base_price').text(data.base_price ? `Rp ${data.base_price}` : '-');
+                    $('#margin_price').text(data.margin_price ? `Rp ${data.margin_price}` : '-');
+                    $('#final_price').text(data.final_price ? `Rp ${data.final_price}` : '-');
                     $('#total_stock').text(data.total_stock || '-');
 
                     const status = data.status || '-';
@@ -298,42 +373,70 @@
         }
 
         function editData(slug) {
-            window.location.href = "{{ url('product/edit') }}" + "/" + slug;
+            $('#form-data').attr('action', "{{ url('katalog-product/update') }}" + "/" + slug);
+
+            $('#form_modal_title').text('Edit Data Produk');
+            showLoading();
+
+            $.ajax({
+                url: `{{ url('/product/detail/json') }}/${slug}`,
+                type: 'GET',
+                data: { _token: "{{ csrf_token() }}" },
+                success: function(result) {
+                    const data = result.response;
+
+                    $('#margin_price_update').val(data.margin_price);
+                    if ($('#status_update option[value="' + data.status+ '"]').length > 0) {
+                        $('#status_update').val(data.status).trigger('change');
+                    }
+
+                    $('#form_modal').modal('show');
+                    Swal.close();
+                },
+                error: function(result) {
+                    alertResultError(result, "Error, Data Product gagal didapatkan.");
+                }
+            });
         }
 
-        function deleteData(slug) {
+        function submitForm() {
+            let formData = new FormData($('#form-data')[0]);
+
             Swal.fire({
-                title: 'Ingin menghapus Data?',
-                text: "Anda tidak akan dapat mengembalikan ini!",
+                title: 'Simpan?',
+                text: "Pastikan data yang anda isi telah sesuai!",
                 icon: 'warning',
                 showDenyButton: true,
-                denyButtonText: 'Tidak, jangan hapus.',
-                confirmButtonText: 'Ya, Hapus!'
+                denyButtonText: 'Tidak jangan simpan.',
+                confirmButtonText: 'Ya, Simpan!'
             }).then((result) => {
                 if (result.isConfirmed) {
                     showLoading();
 
                     $.ajax({
-                        url: "{{ url('product/delete') }}" + "/" + slug,
-                        type: 'DELETE',
-                        data: { _token: "{{ csrf_token() }}" },
+                        url: $('#form-data').attr('action'),
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
                         success: function (res) {
                             const metadata = res?.metadata;
                             const errorCode = metadata?.status_code || res.status;
 
                             if (errorCode === 200) {
-                                resSuccessSwal(res.metadata.message ?? 'Berhasil menghapus data.', '#form_modal');
+                                resSuccessSwal(res.metadata.message ?? 'Berhasil menambahkan data.', '#form_modal');
                             } else {
                                 handleResError(res);
                             }
                         },
                         error: function (res) {
                             let errorInfo = res.responseJSON.metadata.message || 'Ups.. Sedang terjadi kesalahan pada sistem.';
+                            console.log(errorInfo)
                             resErrorSwal('Peringatan!', errorInfo, 'error');
                         }
                     });
                 } else if (result.isDenied) {
-                    resErrorSwal('Dibatalkan', 'Data tidak jadi dihapus.', 'warning')
+                    resErrorSwal('Dibatalkan', 'Periksa kembali data yang anda isi.', 'warning')
                 }
             });
         }

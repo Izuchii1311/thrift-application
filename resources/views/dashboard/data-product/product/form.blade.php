@@ -17,13 +17,13 @@
             <div class="card-body pt-0">
                 <select class="form-select mb-2" name="status" id="status" data-control="select2" data-hide-search="true" data-placeholder="Status Produk">
                     <option></option>
-                    @if(auth()->user()->roles->firstWhere('pivot.is_active', true)->role_name === 'Opname')
+                    @if(auth()->user()->roles->firstWhere('pivot.is_active', true)->role_name === 'opname')
                         <!-- Opsi untuk Opname -->
                         <option value="draft">Draft</option>
                         <option value="proses">Dalam Proses</option>
                         <option value="menunggu_validasi">Menunggu Validasi</option>
                         <option value="tidak_layak">Tidak Layak</option>
-                    @elseif(auth()->user()->roles->firstWhere('pivot.is_active', true)->role_name === 'Admin')
+                    @elseif(auth()->user()->roles->firstWhere('pivot.is_active', true)->role_name === 'admin')
                         <!-- Opsi untuk Admin -->
                         <option value="tersedia">Tersedia</option>
                         <option value="tidak_tersedia">Tidak Tersedia</option>

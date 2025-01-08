@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ManagementSystem;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Models\ManagementSystem\Menu;
 use Illuminate\Support\Facades\Crypt;
 use App\Http\Controllers\BaseController;
@@ -21,6 +22,7 @@ class ManagementMenuController extends BaseController
 
     public function index()
     {
+        return Menu::getMenuByActiveUser(Auth::user());
         $menu_access = $this->getMenuPermissionsByKey('management-menu');
         return view('dashboard.management_system.menus.index', compact('menu_access'));
     }

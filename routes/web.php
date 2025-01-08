@@ -1,11 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SelectOptionController;
 
-Route::get('/', function () {
-    return redirect()->route('dashboard.index');
+Route::controller(LandingController::class)->group(function() {
+    Route::get('/', 'index')->name('landing-index');
 });
 
 # Authentication
@@ -16,17 +17,17 @@ Route::middleware(['auth'])->group(function() {
     Route::name('dashboard.')->controller(DashboardController::class)->group(function() {
         Route::post('/change-role', 'changeRole')->name('changeRole');
     });
-    Route::middleware(['auth'])->group(function() {
-    // Route::middleware(['hak_akses_menu'])->group(function() {
+
+    require __DIR__ . '/modules/management-data-product.php';
+    require __DIR__ . '/modules/keuangan.php';
+    require __DIR__ . '/modules/management-system.php';
+    require __DIR__ . '/modules/masterdata.php';
+
+    Route::middleware(['hak_akses_menu'])->group(function() {
         # Dashboard
         Route::name('dashboard.')->controller(DashboardController::class)->group(function() {
             Route::get('/dashboard', 'index')->name('index');
-            // Route::post('/change-role', 'changeRole')->name('changeRole');
         });
-
-        require __DIR__ . '/modules/management-system.php';
-        require __DIR__ . '/modules/masterdata.php';
-        require __DIR__ . '/modules/management-data-product.php';
     });
 });
 
