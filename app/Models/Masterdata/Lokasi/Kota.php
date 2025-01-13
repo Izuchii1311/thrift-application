@@ -7,5 +7,7 @@ use App\Models\BaseModel;
 class Kota extends BaseModel
 {
     protected $table = 'masterdata_kota';
-    protected $guarded = ['id'];
+    protected $primaryKey = 'kode_kota';
+    public $incrementing = false;
+
 }

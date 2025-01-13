@@ -7,5 +7,7 @@ use App\Models\BaseModel;
 class Kelurahan extends BaseModel
 {
     protected $table = 'masterdata_kelurahan';
-    protected $guarded = ['id'];
+    protected $primaryKey = 'kode_kelurahan';
+    public $incrementing = false;
+
 }

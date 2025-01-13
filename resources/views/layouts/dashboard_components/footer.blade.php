@@ -3,7 +3,14 @@
         {{-- User Information --}}
         <div class="d-flex align-items-center" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-overflow="true" data-kt-menu-placement="top-start">
             <div class="d-flex flex-center cursor-pointer symbol symbol-circle symbol-40px">
-                <img src="{{ asset('assets/dashboard/media/avatars/300-1.jpg') }}" alt="image"/>
+                {{-- <img src="{{ asset('assets/dashboard/media/avatars/300-1.jpg') }}" alt="image"/> --}}
+                @if (Auth::user()->profile_picture)
+                    <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="{{ Str::title(Auth::user()->name) }}" class="w-100 h-100" style="object-fit: cover;" />
+                @else
+                    <div class="symbol-label fs-3 bg-light-danger text-danger">
+                        {{ Str::upper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
+                @endif
             </div>
             {{-- Name --}}
             <div class="d-flex flex-column align-items-start justify-content-center ms-3">
@@ -19,7 +26,14 @@
                 <div class="menu-content d-flex align-items-center px-3">
                     {{-- Avatar --}}
                     <div class="symbol symbol-50px me-5">
-                        <img alt="Logo" src="{{ asset('assets/dashboard/media/avatars/300-1.jpg') }}"/>
+                        {{-- <img alt="Logo" src="{{ asset('assets/dashboard/media/avatars/300-1.jpg') }}"/> --}}
+                        @if (Auth::user()->profile_picture)
+                            <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" alt="{{ Str::title(Auth::user()->name) }}" class="w-100 h-100" style="object-fit: cover;" />
+                        @else
+                            <div class="symbol-label fs-3 bg-light-danger text-danger">
+                                {{ Str::upper(substr(Auth::user()->name, 0, 1)) }}
+                            </div>
+                        @endif
                     </div>
                     <div class="d-flex flex-column">
                         <div class="fw-bold d-flex align-items-center fs-5">{{ Auth::user()->name }}

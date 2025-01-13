@@ -47,7 +47,6 @@ class ManagementUserController extends BaseController
                 }
 
                 $profilePicture = $row->profile_picture
-
                     ? '<img src="' . asset('storage/' . $row->profile_picture) . '" alt="' . Str::title($row->name) . '" class="w-100 h-100" style="object-fit: cover;" />'
                     : '<div class="symbol-label fs-3 bg-light-danger text-danger">' . Str::upper(substr($row->name, 0, 1)) . '</div>';
 

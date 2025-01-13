@@ -20,7 +20,6 @@ Route::prefix('brand')->name('brand.')->controller(BrandController::class)->grou
 # Management Product
 Route::prefix('product')->name('product.')->controller(ProductController::class)->group(function() {
     Route::post('/json', 'indexJson')->name('indexJson');
-    Route::get('/detail/json/{slug}', 'detailJson')->name('detailJson');
     Route::post('/update-price/{slug}', 'updatePrice')->name('updatePrice');
 });
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Models\UserAddress;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ManagementSystem\Role;
 use Illuminate\Support\Facades\Cache;
@@ -11,6 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -103,5 +105,10 @@ class User extends Authenticatable
             'role_is_active'        => $default_role->pivot->is_active,
             'roles'                 => $roles,
         ];
+    }
+
+    public function address(): HasOne
+    {
+        return $this->hasOne(UserAddress::class, 'user_id', 'id');
     }
 }

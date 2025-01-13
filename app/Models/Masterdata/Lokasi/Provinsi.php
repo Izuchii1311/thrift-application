@@ -7,5 +7,7 @@ use App\Models\BaseModel;
 class Provinsi extends BaseModel
 {
     protected $table = 'masterdata_provinsi';
-    protected $guarded = ['id'];
+    protected $primaryKey = 'kode_provinsi';
+    public $incrementing = false;
+
 }

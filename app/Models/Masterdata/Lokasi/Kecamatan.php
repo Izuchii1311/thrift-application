@@ -7,5 +7,7 @@ use App\Models\BaseModel;
 class Kecamatan extends BaseModel
 {
     protected $table = 'masterdata_kecamatan';
-    protected $guarded = ['id'];
+    protected $primaryKey = 'kode_kecamatan';
+    public $incrementing = false;
+
 }
